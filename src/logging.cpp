@@ -7,6 +7,16 @@ Logging::Logging(const std::string& path) : PATH(path)
     init();
 }
 
+void Logging::init()
+{
+    std::ofstream file(PATH, std::ios::app);
+    Logging::write(LevelLog::Info, "Запуск сервера...");
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Не удалось создать файл для логирования!");
+    }
+}
+
 void Logging::write(Logging::LevelLog level, const std::string& msg)
 {
     time_t time = std::time(nullptr);
@@ -52,15 +62,5 @@ void Logging::write(Logging::LevelLog level, const std::string& msg)
     if (!file)
     {
         throw std::runtime_error("Ошибка записи в файл журнала: " + PATH);
-    }
-}
-
-void Logging::init()
-{
-    std::ofstream file(PATH, std::ios::app);
-    Logging::write(LevelLog::Info, "Запуск сервера...");
-    if (!file.is_open())
-    {
-        throw std::runtime_error("Не удалось создать файл для логирования!");
     }
 }

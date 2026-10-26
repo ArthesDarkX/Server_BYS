@@ -1,12 +1,6 @@
-#include "calculator.h"
 #include <iostream>
 
-void Calculator::check(const size_t vectors_count)
-{
-    if (vectors_count != count_vectors) {
-        throw std::invalid_argument("Передано меньше или больше векторов, чем требуется!");
-    }
-}
+#include "calculator.h"
 
 std::uint16_t Calculator::calcVector(const std::vector<std::uint16_t>& vector)
 {

@@ -1,13 +1,13 @@
 #pragma once
 
 #include <arpa/inet.h>
+#include <cstdint>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <cstdint>
 #include <vector>
 
-#include "db.h"
 #include "authenticator.h"
+#include "db.h"
 #include "logging.h"
 
 class Server
@@ -26,8 +26,16 @@ public:
 
     Server(const int port, DB& database, Authenticator& auth, Logging& logger);
     void start();
-    std::vector<std::uint16_t> receiveVector(int client_fd);
+
+    void handleClient(int client_fd);
+
     void receiveExact(int client_fd, void* data, ssize_t bytes);
+    
+    
+    void processVectors(int client_fd);
+    std::vector<std::uint16_t> receiveVector(int client_fd);
+
+    void logError(Logging::LevelLog level, const std::string& msg);
 
     void sendData(int client_fd, const void* data, ssize_t bytes);
     bool authenticate(int client_fd);

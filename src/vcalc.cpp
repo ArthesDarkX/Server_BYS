@@ -1,11 +1,11 @@
 #include <iostream>
 #include <exception>
 
+#include "authenticator.h"
 #include "cml.h"
 #include "db.h"
-#include "authenticator.h"
-#include "server.h"
 #include "logging.h"
+#include "server.h"
 
 int main(int argc, char* argv[])
 {

@@ -1,13 +1,13 @@
 #include <cstring>
+#include <cerrno>
+#include <iostream>
 #include <stdexcept>
 #include <unistd.h>
-#include <iostream>
-#include <cerrno>
 
-#include "db.h"
 #include "authenticator.h"
-#include "server.h"
 #include "calculator.h"
+#include "db.h"
+#include "server.h"
 
 Server::Server(const int port, DB& database, Authenticator& auth, Logging& logger)
 : port(port), database(database), auth(auth), logger(logger) {};
@@ -62,7 +62,7 @@ void Server::start()
             int client_fd = accept(server_fd, (sockaddr*)&client_struct, &client_len);
             if (client_fd == -1)
             {
-                logger.write(Logging::Error, std::string("Ошибка при принятии соединения: ") + std::strerror(errno));
+                logError(Logging::Error, std::string("Ошибка при принятии соединения: ") + std::strerror(errno));
                 continue;
             }
 
@@ -70,49 +70,15 @@ void Server::start()
 
             try
             {
-                if (!authenticate(client_fd))
-                {
-                    continue;
-                }
-                
-                std::uint32_t number_vectors;
-                receiveExact(client_fd, &number_vectors, sizeof(number_vectors));
-
-                if (number_vectors > MAX_VECTORS)
-                {
-                    throw std::out_of_range("Клиент передал большее количество векторов, чем требуется");
-                }
-
-                Calculator calc(number_vectors);
-                for (std::uint32_t i = 0; i < number_vectors; ++i)
-                {
-                    auto vector = receiveVector(client_fd);
-                    auto result = calc.calcVector(vector);
-
-                    sendData(client_fd, &result, sizeof(result));
-                }
+                handleClient(client_fd);
             }
             catch (const std::out_of_range& ex)
             {
-                try
-                {
-                    logger.write(Logging::Warn, ex.what());
-                }
-                catch (const std::exception& log_err)
-                {
-                    std::cerr << "Ошибка логгера: " << log_err.what() << '\n';
-                }
+                logError(Logging::Warn, ex.what());
             }
             catch (const std::exception& ex)
             {
-                try
-                {
-                    logger.write(Logging::Error, ex.what());
-                }
-                catch (const std::exception& log_err)
-                {
-                    std::cerr << "Ошибка логгера: " << log_err.what() << '\n';
-                }
+                logError(Logging::Error, ex.what());
             }
         }
     }
@@ -149,13 +115,39 @@ void Server::receiveExact(int client_fd, void* data, ssize_t bytes)
     }
 }
 
+std::vector<std::uint16_t> Server::receiveVector(int client_fd)
+{
+    std::uint32_t vector_size;
+    receiveExact(client_fd, &vector_size, sizeof(vector_size));
+
+    if (vector_size > MAX_SIZE_VECTOR)
+    {
+        throw std::out_of_range("Клиент ввёл большое количество чисел");
+    }
+
+    std::vector<std::uint16_t> numbers;
+    numbers.reserve(vector_size);
+
+    for (std::uint32_t i = 0; i < vector_size; ++i)
+    {
+        std::uint16_t number;
+        receiveExact(client_fd, &number, sizeof(number));
+        numbers.push_back(number);
+    }
+    return numbers;
+}
+
 void Server::sendData(int client_fd, const void* data, ssize_t to_send_bytes)
 {
     ssize_t send_bytes = 0;
     while (send_bytes < to_send_bytes)
     {
         ssize_t bytes = send(client_fd, (const char*)data + send_bytes, to_send_bytes - send_bytes, MSG_NOSIGNAL);
-        if (bytes <= 0)
+        if (bytes == -1)
+        {
+            throw std::runtime_error(std::string("Ошибка при отправке данных") + std::strerror(errno));
+        }
+        if (bytes == 0)
         {
             throw std::runtime_error(std::string("Ошибка при отправке данных"));
         }
@@ -170,13 +162,12 @@ bool Server::authenticate(int client_fd)
 
     std::string login(login_buff, sizeof(login_buff));
 
-    User user;
+    User user = database.findUser(login);
     std::string salt = auth.genSalt();
     
-    user = database.findUser(login);
     if (user.LOGIN.empty())
     {
-        logger.write(Logging::Warn, std::string("Пользователь не найден в базе данных"));
+        logError(Logging::Warn, "Пользователь не найден в базе данных");
         sendData(client_fd, "ERR", 3);
         return false;
     }
@@ -192,29 +183,48 @@ bool Server::authenticate(int client_fd)
         sendData(client_fd, "OK", 2);
         return true;
     }
-    logger.write(Logging::Warn, std::string("Пользователь ввёл неверный пароль"));
+    logError(Logging::Warn, std::string("Пользователь ввёл неверный пароль"));
     sendData(client_fd, "ERR", 3);
     return false;
 }
 
-std::vector<std::uint16_t> Server::receiveVector(int client_fd)
+void Server::handleClient(int client_fd)
 {
-    std::uint32_t size_vector;
-    receiveExact(client_fd, &size_vector, sizeof(size_vector));
-
-    if (size_vector > MAX_SIZE_VECTOR)
+    if (!authenticate(client_fd))
     {
-        throw std::out_of_range("Клиент ввёл большое количество чисел");
+        return;
+    }
+    processVectors(client_fd);
+}
+
+void Server::processVectors(int client_fd)
+{
+    std::uint32_t vector_count;
+    receiveExact(client_fd, &vector_count, sizeof(vector_count));
+    
+    if (vector_count > MAX_VECTORS)
+    {
+        throw std::out_of_range("Клиент передал большее количество векторов, чем требуется");
     }
 
-    std::vector<std::uint16_t> numbers;
-    numbers.reserve(size_vector);
-
-    for (std::uint32_t i = 0; i < size_vector; ++i)
+    Calculator calculator(vector_count);
+    for (std::uint32_t i = 0; i < vector_count; ++i)
     {
-        std::uint16_t number;
-        receiveExact(client_fd, &number, sizeof(number));
-        numbers.push_back(number);
+        auto numbers = receiveVector(client_fd);
+        auto result = calculator.calcVector(numbers);
+        
+        sendData(client_fd, &result, sizeof(result));
     }
-    return numbers;
+}
+
+void Server::logError(Logging::LevelLog level, const std::string& msg)
+{
+    try
+    {
+        logger.write(level, msg);
+    }
+    catch (const std::exception& log_err)
+    {
+        std::cerr << "Ошибка логгера: " << log_err.what() << '\n';
+    }
 }
