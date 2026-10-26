@@ -207,7 +207,7 @@ void Server::processVectors(int client_fd)
         throw std::out_of_range("Клиент передал большее количество векторов, чем требуется");
     }
 
-    Calculator calculator(vector_count);
+    Calculator calculator;
     for (std::uint32_t i = 0; i < vector_count; ++i)
     {
         auto numbers = receiveVector(client_fd);

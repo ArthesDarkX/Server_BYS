@@ -9,12 +9,7 @@ Logging::Logging(const std::string& path) : PATH(path)
 
 void Logging::init()
 {
-    std::ofstream file(PATH, std::ios::app);
     Logging::write(LevelLog::Info, "Запуск сервера...");
-    if (!file.is_open())
-    {
-        throw std::runtime_error("Не удалось создать файл для логирования!");
-    }
 }
 
 void Logging::write(Logging::LevelLog level, const std::string& msg)
