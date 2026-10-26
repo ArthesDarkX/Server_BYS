@@ -6,15 +6,15 @@
 #include <utility>
 #include <vector>
 
-class calculator
+class Calculator
 {
 private:
 const std::uint32_t count_vectors;
 std::vector<std::uint16_t> vectors_result;
 public:
-    calculator(std::uint32_t count_vectors) : count_vectors(count_vectors) {};
+    Calculator(std::uint32_t count_vectors) : count_vectors(count_vectors) {};
     
     void check(const size_t vectors_count);
 
-    std::pair<std::uint32_t, std::vector<std::uint16_t>> calc(const std::vector<std::vector<std::uint16_t>>& vectors);
+    std::uint16_t calcVector(const std::vector<std::uint16_t>& vector);
 };

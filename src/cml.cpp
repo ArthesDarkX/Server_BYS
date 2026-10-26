@@ -6,6 +6,14 @@
 
 cml::cml(int argc, char** argv) : arg_count(argc), arg_values(argv) {};
 
+struct option long_options[] = {
+    {"help", no_argument, nullptr, 'h'},
+    {"database", required_argument, nullptr, 'd'},
+    {"port", required_argument, nullptr, 'p'},
+    {"log", required_argument, nullptr, 'l'},
+    {0, 0, 0, 0}
+};
+
 bool cml::parse()
 {
     int opt;
@@ -27,11 +35,11 @@ bool cml::parse()
                     {
                         port = std::stoi(optarg, &pos);
                     }
-                    catch (const std::invalid_argument)
+                    catch (const std::invalid_argument&)
                     {
                         throw std::invalid_argument("Указан некорректный порт: " + std::string(optarg));
                     }
-                    catch (const std::out_of_range)
+                    catch (const std::out_of_range&)
                     {
                         throw std::out_of_range("Порт больше допустимого значения. Порт: " + std::string(optarg));
                     }
@@ -63,7 +71,7 @@ bool cml::parse()
 void cml::help()
 {
     std::cout << "Справка использования программы\n"
-    << "./vcalc - запуск по умолчанию"
+    << "./vcalc - запуск по умолчанию\n"
     << "-h (--help) - вывод справки\n"
     << "-p (--port) [port] - установка порта для запуска сервера, по умолчанию 33333\n"
     << "-d (--database) [path] - указание пути для файла базы данных, по умолчанию vcalc.conf\n"

@@ -16,9 +16,9 @@ void Logging::write(Logging::LevelLog level, const std::string& msg)
     {
         throw std::runtime_error("Преобразование времени не удалось!");
     }
-    if (!strftime(buf, sizeof(buf), "%d.%m.%Y %T", tm))
+    if (!strftime(buf, sizeof(buf), "%d-%m-%Y %T", tm))
     {
-        throw std::logic_error("Недостаточно места для записи времени!");
+        throw std::out_of_range("Недостаточно места для записи времени!");
     }
 
     std::ofstream file(PATH, std::ios::app);
@@ -29,19 +29,19 @@ void Logging::write(Logging::LevelLog level, const std::string& msg)
     switch (level)
     {
     case Logging::Debug:
-        file << "[DEBUG] " << buf << ' ' << msg << '\n';
+        file << buf << " [DEBUG] " << msg << '\n';
         break;
     case Logging::Info:
-        file << "[INFO]  " << buf << ' ' << msg << '\n';
+        file << buf << " [INFO] " << msg << '\n';
         break;
     case Logging::Warn:
-        file << "[WARN]  " << buf << ' ' << msg << '\n';
+        file << buf << " [WARN] " << msg << '\n';
         break;
     case Logging::Error:
-        file << "[ERROR] " << buf << ' ' << msg << '\n';
+        file << buf << " [ERROR] " << msg << '\n';
         break;
     case Logging::Fatal:
-        file << "[FATAL] " << buf << ' ' << msg << '\n';
+        file << buf << " [FATAL] "  << msg << '\n';
         break;
     }
     if (!file)
@@ -58,6 +58,7 @@ void Logging::write(Logging::LevelLog level, const std::string& msg)
 void Logging::init()
 {
     std::ofstream file(PATH, std::ios::app);
+    Logging::write(LevelLog::Info, "Запуск сервера...");
     if (!file.is_open())
     {
         throw std::runtime_error("Не удалось создать файл для логирования!");

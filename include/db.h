@@ -10,13 +10,13 @@ struct User
     std::string PASSWORD;
 };
 
-class db
+class DB
 {
 private:
 const std::string PATH;
 std::unordered_map<std::string, std::string> users;
 public:
-    db(const std::string& path);
+    DB(const std::string& path);
     void load();
     User findUser(const std::string& login);
 };

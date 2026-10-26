@@ -2,9 +2,9 @@
 
 #include "db.h"
 
-db::db(const std::string& path) : PATH(path) {};
+DB::DB(const std::string& path) : PATH(path) {};
 
-void db::load()
+void DB::load()
 {
     std::ifstream file(PATH);
     if (!file.is_open())
@@ -44,7 +44,7 @@ void db::load()
     }
 }
 
-User db::findUser(const std::string& login)
+User DB::findUser(const std::string& login)
 {
     User user;
     auto it = users.find(login);
@@ -52,10 +52,6 @@ User db::findUser(const std::string& login)
     {
         user.LOGIN = it->first;
         user.PASSWORD = it->second;
-    }
-    else
-    {
-        throw std::logic_error("Пользователь " + login + " не найден!");
     }
     return user;
 }
