@@ -1,6 +1,6 @@
 
 CXX = g++
-CXXFLAGS = -std=c++11 -Wall -Wextra -Iinclude -o
+CXXFLAGS = -std=c++14 -Wall -Wextra -Iinclude -o
 LDLIBS = -lcryptopp
 
 TARGET = vcalc
