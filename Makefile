@@ -1,24 +1,20 @@
-
 CXX = g++
-CXXFLAGS = -std=c++14 -Wall -Wextra -Iinclude -o
-LDLIBS = -lcryptopp
+CXXFLAGS = -std=c++17 -Wall -Wextra -Iinclude
+LDLIBS = -lcryptopp -lUnitTest++
 
-TARGET = vcalc
+TARGET = vcalc_tests
 
 SOURCES = src/vcalc.cpp \
           src/cml.cpp \
           src/db.cpp \
           src/authenticator.cpp \
-          src/server.cpp \
           src/calculator.cpp \
           src/logging.cpp
-
-OBJECTS = $(SOURCES:.cpp=.o)
 
 all: $(TARGET)
 
 $(TARGET): $(SOURCES)
-	$(CXX) $(SOURCES) $(CXXFLAGS) $(TARGET) $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(TARGET) $(LDLIBS)
 
 clean:
 	rm -f $(TARGET)
