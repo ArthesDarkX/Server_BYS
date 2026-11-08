@@ -157,12 +157,10 @@ void Server::sendData(int client_fd, const void* data, ssize_t to_send_bytes)
 
 bool Server::authenticate(int client_fd)
 {
-    char login_buff[4];
-    receiveExact(client_fd, login_buff, sizeof(login_buff));
+    std::string login_buff(4, '\0');
+    receiveExact(client_fd, login_buff.data(), login_buff.size());
 
-    std::string login(login_buff, sizeof(login_buff));
-
-    User user = database.findUser(login);
+    User user = database.findUser(login_buff);
     std::string salt = auth.genSalt();
     
     if (user.LOGIN.empty())
