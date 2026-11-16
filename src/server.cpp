@@ -100,19 +100,16 @@ void Server::start()
 void Server::receiveExact(int client_fd, void* data, ssize_t bytes)
 {
     ssize_t recv_bytes = 0;
-    while (recv_bytes < bytes)
+    ssize_t recv_byte = recv(client_fd, (char*)data + recv_bytes, bytes - recv_bytes, 0);
+    if (recv_byte == -1)
     {
-        ssize_t recv_byte = recv(client_fd, (char*)data + recv_bytes, bytes - recv_bytes, 0);
-        if (recv_byte == -1)
-        {
-            throw std::runtime_error(std::string("Произошла ошибка при получении данных: ") + std::strerror(errno));
-        }
-        if (recv_byte == 0)
-        {
-            throw std::runtime_error("Были обработаны не все данные, клиент закрыл соединение!");
-        }
-        recv_bytes += recv_byte;
+        throw std::runtime_error(std::string("Произошла ошибка при получении данных: ") + std::strerror(errno));
     }
+    if (recv_byte == 0)
+    {
+        throw std::runtime_error("Были обработаны не все данные, клиент закрыл соединение!");
+    }
+    recv_bytes += recv_byte;
 }
 
 std::vector<std::uint16_t> Server::receiveVector(int client_fd)
@@ -157,12 +154,13 @@ void Server::sendData(int client_fd, const void* data, ssize_t to_send_bytes)
 
 bool Server::authenticate(int client_fd)
 {
-    std::string login_buff(4, '\0');
+    std::string login_buff(64, '\0');
     receiveExact(client_fd, login_buff.data(), login_buff.size());
+    login_buff.resize(login_buff.find('\0'));
 
     User user = database.findUser(login_buff);
     std::string salt = auth.genSalt();
-    
+
     if (user.LOGIN.empty())
     {
         logError(Logging::Warn, "Пользователь не найден в базе данных");
